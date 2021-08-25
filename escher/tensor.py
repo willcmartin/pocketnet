@@ -8,25 +8,27 @@ class Tensor:
         self.grad = None
         self.op = None
 
-    # def __mul__(self, other):
-    #     op = Multiply
-    #     output = Tensor(op.forward(self, other))
-    #     output.op = op
-    #     return output
 
     def matmul(self, other):
         return Matmul.forward(self, other)
-        # op = Matmul
-        # output = Tensor(*op.forward(self, other))
-        # output.op = op
-        # return output
 
-    # def __add__(self, other):
-    #     op = Add
-    #     output = Tensor(op.forward(self, other))
-    #     output.op = op
-    #     return output
-    #
+    def add(self, other):
+        return Add.forward(self, other)
+
+    def sum(self):
+        return Sum.forward(self)
+
+    def backward(self):
+        if self.grad is None:
+            self.grad = Tensor(np.ones(self.data.shape))
+        if self.op is not None:
+            children_grads = self.op.backward(self, self.children)
+            for child, grad in zip(self.children, children_grads):
+                child.grad = Tensor(grad)
+        for child in self.children:
+            child.backward()
+
+
     # def backward(self):
     #     if self.grad is None:
     #         self.grad = Tensor(np.ones(self.data.shape))
@@ -40,12 +42,37 @@ class Tensor:
 class Op:
     @classmethod
     def forward(cls, *inputs):
-        return Tensor(cls._f(*inputs), list(inputs))
+        parent = Tensor(cls._f(*inputs), list(inputs))
+        parent.op = cls
+        return parent
+
+    @classmethod
+    def backward(cls, parent, children):
+        return cls._b(parent, *children)
+
 
 class Matmul(Op):
     @staticmethod
     def _f(a, b):
         return np.matmul(a.data, b.data)
 
-    # def _b(parent, a, b):
-    #     return [b * parent.grad, a * parent.grad]
+    @staticmethod
+    def _b(parent, a, b):
+        # should be matmul
+        return [b.data * parent.grad.data, a.data * parent.grad.data]
+
+class Add(Op):
+    @staticmethod
+    def _f(a, b):
+        return np.add(a.data, b.data)
+
+    def _b(parent, a, b):
+        return [parent.grad.data, parent.grad.data]
+
+class Sum(Op):
+    @staticmethod
+    def _f(a):
+        return np.sum(a.data)
+
+    def _b(parent, a):
+        pass
