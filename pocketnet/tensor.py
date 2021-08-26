@@ -58,8 +58,7 @@ class Matmul(Op):
 
     @staticmethod
     def _b(parent, a, b):
-        # should be matmul
-        return [b.data * parent.grad.data, a.data * parent.grad.data]
+        return [parent.grad.data @ b.data.T , a.data.T @ parent.grad.data]
 
 class Add(Op):
     @staticmethod
@@ -71,8 +70,8 @@ class Add(Op):
 
 class Sum(Op):
     @staticmethod
-    def _f(a):
-        return np.sum(a.data)
+    def _f(parent):
+        return np.sum(parent.data)
 
     def _b(parent, a):
-        pass
+        return [np.ones(a.data.shape)]
