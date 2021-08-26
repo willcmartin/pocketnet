@@ -8,7 +8,6 @@ class Tensor:
         self.grad = None
         self.op = None
 
-
     def matmul(self, other):
         return Matmul.forward(self, other)
 
@@ -21,6 +20,9 @@ class Tensor:
     def mean(self):
         return Mean.forward(self)
 
+    def power(self, other):
+        return Power.forward(self, other)
+
     def backward(self):
         if self.grad is None:
             self.grad = Tensor(np.ones(self.data.shape))
@@ -29,7 +31,8 @@ class Tensor:
             for child, grad in zip(self.children, children_grads):
                 child.grad = Tensor(grad)
         for child in self.children:
-            child.backward()
+            if isinstance(child, Tensor):
+                child.backward()
 
 
     # def backward(self):
@@ -73,8 +76,8 @@ class Add(Op):
 
 class Sum(Op):
     @staticmethod
-    def _f(parent):
-        return np.sum(parent.data)
+    def _f(a):
+        return np.sum(a.data)
 
     def _b(parent, a):
         return [np.ones(a.data.shape)]
@@ -86,3 +89,12 @@ class Mean(Op):
 
     def _b(parent, a):
         return [np.ones(a.data.shape)*(1/a.data.size)]
+
+class Power(Op):
+    @staticmethod
+    def _f(a, b):
+        return np.power(a.data, b)
+
+    def _b(parent, a, b):
+        print(np.power(a.data, b - 1))
+        return [b * np.power(a.data, b - 1) * parent.grad.data]

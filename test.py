@@ -7,11 +7,11 @@ b = Tensor([[900, 900], [900, 900]])
 
 print(f'x: {x.data}')
 
-y = x.matmul(w).add(b).mean()
+y = x.matmul(w).power(2).mean()
 print(f'y: {y.data}')
 #
 y.backward()
 #
 print(x.grad.data)
 print(w.grad.data)
-print(b.grad.data)
+# print(b.grad.data)
