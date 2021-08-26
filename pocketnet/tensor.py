@@ -18,6 +18,9 @@ class Tensor:
     def sum(self):
         return Sum.forward(self)
 
+    def mean(self):
+        return Mean.forward(self)
+
     def backward(self):
         if self.grad is None:
             self.grad = Tensor(np.ones(self.data.shape))
@@ -75,3 +78,11 @@ class Sum(Op):
 
     def _b(parent, a):
         return [np.ones(a.data.shape)]
+
+class Mean(Op):
+    @staticmethod
+    def _f(parent):
+        return np.mean(parent.data)
+
+    def _b(parent, a):
+        return [np.ones(a.data.shape)*(1/a.data.size)]
