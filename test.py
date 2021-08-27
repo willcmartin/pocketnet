@@ -14,7 +14,7 @@ import numpy as np
 # #
 # print(x.grad.data)
 # print(w.grad.data)
-# print(b.grad.data)
+# print(b.grad.data) 
 
 x = Tensor([[1.0308]])
 
