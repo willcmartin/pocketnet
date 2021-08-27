@@ -11,6 +11,11 @@ class Tensor:
     def matmul(self, other):
         return Matmul.forward(self, other)
 
+    def multiply(self, other):
+        out = self
+        out.data = np.multiply(out.data, other)
+        return out
+
     def add(self, other):
         return Add.forward(self, other)
 
@@ -113,8 +118,8 @@ class Linear:
         self.in_dim = in_dim
         self.out_dim = out_dim
         # TODO: make random
-        self.weight = Tensor([[0.3304]])
-        self.bias = Tensor([0.4247])
+        self.weight = Tensor([[-0.2271]])
+        self.bias = Tensor([-0.3868])
 
     def __call__(self, x):
         return x.matmul(self.weight.transpose()).add(self.bias)
@@ -137,8 +142,7 @@ class SGD:
     # todo zero grad function
     def step(self):
         for param in self.params:
-            print(param.data)
-            param.data -= (param.grad.multiply(self.lr))
+            param.data = param.data - (np.multiply(param.grad.data, self.lr))
 
     def zero_grad(self):
         for param in self.params:
