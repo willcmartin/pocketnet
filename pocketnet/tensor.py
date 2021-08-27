@@ -1,4 +1,4 @@
-# from escher.ops import *
+# from pocketnet.ops import *
 import numpy as np
 
 class Tensor:
@@ -14,6 +14,9 @@ class Tensor:
     def add(self, other):
         return Add.forward(self, other)
 
+    def subtract(self, other):
+        return Subtract.forward(self, other)
+
     def sum(self):
         return Sum.forward(self)
 
@@ -22,6 +25,11 @@ class Tensor:
 
     def power(self, other):
         return Power.forward(self, other)
+
+    def transpose(self):
+        out = self
+        out.data = np.transpose(out.data)
+        return out
 
     def backward(self):
         if self.grad is None:
@@ -35,16 +43,6 @@ class Tensor:
                 child.backward()
 
 
-    # def backward(self):
-    #     if self.grad is None:
-    #         self.grad = Tensor(np.ones(self.data.shape))
-    #     if self.op is not None:
-    #         children_grads = self.op.backward(self, *self.children)
-    #         for node, grad in zip(self.children, children_grads):
-    #             node.grad = grad
-    #     for node in self.children:
-    #         node.backward()
-
 class Op:
     @classmethod
     def forward(cls, *inputs):
@@ -56,10 +54,12 @@ class Op:
     def backward(cls, parent, children):
         return cls._b(parent, *children)
 
+################################################################################
 
 class Matmul(Op):
     @staticmethod
     def _f(a, b):
+        # TODO: expand dim
         return np.matmul(a.data, b.data)
 
     @staticmethod
@@ -73,6 +73,14 @@ class Add(Op):
 
     def _b(parent, a, b):
         return [parent.grad.data, parent.grad.data]
+
+class Subtract(Op):
+    @staticmethod
+    def _f(a, b):
+        return np.subtract(a.data, b.data)
+
+    def _b(parent, a, b):
+        return [parent.grad.data, -parent.grad.data]
 
 class Sum(Op):
     @staticmethod
@@ -96,5 +104,42 @@ class Power(Op):
         return np.power(a.data, b)
 
     def _b(parent, a, b):
-        print(np.power(a.data, b - 1))
         return [b * np.power(a.data, b - 1) * parent.grad.data]
+
+################################################################################
+
+class Linear:
+    def __init__(self, in_dim, out_dim):
+        self.in_dim = in_dim
+        self.out_dim = out_dim
+        # TODO: make random
+        self.weight = Tensor([[0.3304]])
+        self.bias = Tensor([0.4247])
+
+    def __call__(self, x):
+        return x.matmul(self.weight.transpose()).add(self.bias)
+
+################################################################################
+
+class MSELoss:
+    def __init__(self):
+        pass
+    def __call__(self, pred, true):
+        # TODO: add ops to Tensor
+        return (true.subtract(pred).power(2).mean())
+
+################################################################################
+
+class SGD:
+    def __init__(self, params, lr=0.001):
+        self.params = params
+        self.lr = lr
+    # todo zero grad function
+    def step(self):
+        for param in self.params:
+            print(param.data)
+            param.data -= (param.grad.multiply(self.lr))
+
+    def zero_grad(self):
+        for param in self.params:
+            param.grad.data = 0
