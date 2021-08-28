@@ -31,10 +31,6 @@ class Tensor:
     def power(self, other):
         return Power.forward(self, other)
 
-    # def transpose(self):
-    #     out = self
-    #     out.data = np.transpose(out.data)
-    #     return out
     def transpose(self):
         return Transpose.forward(self)
 
@@ -87,7 +83,6 @@ class Add(Op):
         return np.add(a.data, b.data)
 
     def _b(parent, a, b):
-        # need sum/reshape
         return [unbroadcast(parent.grad.data, a.data.shape),
                 unbroadcast(parent.grad.data, b.data.shape)]
 
@@ -97,7 +92,8 @@ class Subtract(Op):
         return np.subtract(a.data, b.data)
 
     def _b(parent, a, b):
-        return [parent.grad.data, -parent.grad.data]
+        return [unbroadcast(parent.grad.data, a.data.shape),
+                unbroadcast(-parent.grad.data, b.data.shape)]
 
 class Sum(Op):
     @staticmethod
@@ -138,9 +134,8 @@ class Linear:
         self.in_dim = in_dim
         self.out_dim = out_dim
         # TODO: make random
-        self.weight = Tensor([[-0.3578,  0.1450],
-        [ 0.6414, -0.4534]])
-        self.bias = Tensor([0.5516, 0.6089], [0.5516, 0.6089])
+        self.weight = Tensor([[-0.6334]])
+        self.bias = Tensor([-0.7632])
 
     def __call__(self, x):
         return x.matmul(self.weight.transpose()).add(self.bias)
@@ -150,8 +145,8 @@ class Linear:
 class MSELoss:
     def __init__(self):
         pass
+
     def __call__(self, pred, true):
-        # TODO: add ops to Tensor
         return (true.subtract(pred).power(2).mean())
 
 ################################################################################
@@ -160,11 +155,11 @@ class SGD:
     def __init__(self, params, lr=0.001):
         self.params = params
         self.lr = lr
-    # todo zero grad function
+
     def step(self):
         for param in self.params:
             param.data = param.data - (np.multiply(param.grad.data, self.lr))
 
     def zero_grad(self):
         for param in self.params:
-            param.grad.data = 0
+            param.grad = None

@@ -1,32 +1,59 @@
 from pocketnet.tensor import Tensor, Linear, MSELoss, SGD
 import numpy as np
 
-x = Tensor([[ 0.6328, -0.2425],
-        [ 0.0692,  0.5727]])
+num_epochs = 60
+lr = 0.001
 
-y = Tensor([[-0.8524, -0.1387],
-        [-0.9748, -0.8326]])
+x = Tensor([[3.3], [4.4], [5.5], [6.71], [6.93], [4.168],
+                    [9.779], [6.182], [7.59], [2.167], [7.042],
+                    [10.791], [5.313], [7.997], [3.1]])
 
-linear = Linear(2, 2)
-print ('w: ', linear.weight.data)
-print ('b: ', linear.bias.data)
+y = Tensor([[1.7], [2.76], [2.09], [3.19], [1.694], [1.573],
+                    [3.366], [2.596], [2.53], [1.221], [2.827],
+                    [3.465], [1.65], [2.904], [1.3]])
 
-pred = linear(x)
-print("pred linear: ", pred.data)
-
+linear = Linear(1, 1)
 criterion = MSELoss()
-loss = criterion(pred, y)
-print("loss: ", loss.data)
+optimizer = SGD([linear.weight, linear.bias], lr=lr)
+# print ('w: ', linear.weight.data)
+# print ('b: ', linear.bias.data)
 
-loss.backward()
-print ('dL/dw: ', linear.weight.grad.data)
-print ('dL/db: ', linear.bias.grad.data)
+for epoch in range(num_epochs):
 
-optimizer = SGD([linear.weight, linear.bias], lr=0.01)
-optimizer.step()
+    # Forward pass
+    pred = linear(x)
+    loss = criterion(pred, y)
 
-pred = linear(x)
-print("step 1- pred linear: ", pred.data)
+    # Backward and optimize
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
 
-loss = criterion(pred, y)
-print("step 1- loss: ", loss.data)
+    if (epoch+1) % 5 == 0:
+        print ('Epoch [{}/{}], Loss: {:.4f}'.format(epoch+1, num_epochs, loss.data))
+
+
+
+
+
+# pred = linear(x)
+# print("pred linear: ", pred.data)
+#
+#
+# loss = criterion(pred, y)
+# print("loss: ", loss.data)
+#
+# loss.backward()
+# print ('dL/dw: ', linear.weight.grad.data)
+# print ('dL/db: ', linear.bias.grad.data)
+#
+#
+# optimizer.step()
+#
+# pred = linear(x)
+# print("step 1- pred linear: ", pred.data)
+#
+# loss = criterion(pred, y)
+# print("step 1- loss: ", loss.data)
+#
+# optimizer.zero_grad()
