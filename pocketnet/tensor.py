@@ -31,10 +31,12 @@ class Tensor:
     def power(self, other):
         return Power.forward(self, other)
 
+    # def transpose(self):
+    #     out = self
+    #     out.data = np.transpose(out.data)
+    #     return out
     def transpose(self):
-        out = self
-        out.data = np.transpose(out.data)
-        return out
+        return Transpose.forward(self)
 
     def backward(self):
         if self.grad is None:
@@ -61,6 +63,14 @@ class Op:
 
 ################################################################################
 
+def unbroadcast(in_grad, out_shape):
+    # TODO: make more flexible
+    if in_grad.shape != out_shape:
+        out_grad = np.sum(in_grad, axis=0)
+    else:
+        out_grad = in_grad
+    return out_grad
+
 class Matmul(Op):
     @staticmethod
     def _f(a, b):
@@ -77,7 +87,9 @@ class Add(Op):
         return np.add(a.data, b.data)
 
     def _b(parent, a, b):
-        return [parent.grad.data, parent.grad.data]
+        # need sum/reshape
+        return [unbroadcast(parent.grad.data, a.data.shape),
+                unbroadcast(parent.grad.data, b.data.shape)]
 
 class Subtract(Op):
     @staticmethod
@@ -111,6 +123,14 @@ class Power(Op):
     def _b(parent, a, b):
         return [b * np.power(a.data, b - 1) * parent.grad.data]
 
+class Transpose(Op):
+    @staticmethod
+    def _f(a):
+        return np.transpose(a.data)
+
+    def _b(parent, a):
+        return [np.transpose(parent.grad.data)]
+
 ################################################################################
 
 class Linear:
@@ -118,8 +138,9 @@ class Linear:
         self.in_dim = in_dim
         self.out_dim = out_dim
         # TODO: make random
-        self.weight = Tensor([[-0.2271]])
-        self.bias = Tensor([-0.3868])
+        self.weight = Tensor([[-0.3578,  0.1450],
+        [ 0.6414, -0.4534]])
+        self.bias = Tensor([0.5516, 0.6089], [0.5516, 0.6089])
 
     def __call__(self, x):
         return x.matmul(self.weight.transpose()).add(self.bias)
