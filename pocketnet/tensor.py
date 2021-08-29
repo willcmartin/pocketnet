@@ -35,6 +35,12 @@ class Tensor:
     def transpose(self):
         return Transpose.forward(self)
 
+    def log(self):
+        return Log.forward(self)
+
+    def exp(self):
+        return Exp.forward(self)
+
     def backward(self):
         if self.grad is None:
             self.grad = Tensor(np.ones(self.data.shape))
@@ -128,6 +134,26 @@ class Transpose(Op):
     def _b(parent, a):
         return [np.transpose(parent.grad.data)]
 
+class Log(Op):
+    @staticmethod
+    def _f(a):
+        return np.log(a.data)
+
+    # TODO: Check math!
+    def _b(parent, a):
+        return [parent.grad.data / a.data]
+
+class Exp(Op):
+    @staticmethod
+    def _f(a):
+        return np.exp(a.data)
+
+    # TODO: Check math!
+    def _b(parent, a):
+        return [a.data * parent.grad.data]
+
+
+
 ################################################################################
 
 class Linear:
@@ -150,6 +176,13 @@ class MSELoss:
 
     def __call__(self, pred, true):
         return (true.subtract(pred).power(2).mean())
+
+class CrossEntropyLoss:
+    def __init__(self):
+        pass
+    def __call__(self, pred, true):
+        print(true.matmul(pred).mean().data)
+        return (true.matmul(pred).mean())
 
 ################################################################################
 
