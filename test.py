@@ -1,6 +1,9 @@
 from pocketnet.tensor import Tensor, Linear, MSELoss, SGD
 import numpy as np
 
+input_size = 1
+hidden_size = 10
+output_size = 1
 num_epochs = 60
 lr = 0.001
 
@@ -12,16 +15,41 @@ y = Tensor([[1.7], [2.76], [2.09], [3.19], [1.694], [1.573],
                     [3.366], [2.596], [2.53], [1.221], [2.827],
                     [3.465], [1.65], [2.904], [1.3]])
 
-linear = Linear(1, 1)
+class NeuralNet():
+    def __init__(self, input_size, hidden_size, output_size):
+        # super(NeuralNet, self).__init__()
+        self.fc1 = Linear(input_size, hidden_size)
+        self.fc2 = Linear(hidden_size, output_size)
+
+    def forward(self, x):
+        out = self.fc1(x)
+        out = self.fc2(out)
+        return out
+
+
+# linear = Linear(1, 1)
+model = NeuralNet(input_size, hidden_size, output_size)
+
+# model.fc1.weight.data = np.asarray([[0.5550]])
+# model.fc1.bias.data = np.asarray([0.0455])
+# model.fc2.weight.data = np.asarray([[0.6703]])
+# model.fc2.bias.data = np.asarray([0.8395])
+
+print ('w1: ', model.fc1.weight.data)
+print ('b1: ', model.fc1.bias.data)
+print ('w2: ', model.fc2.weight.data)
+print ('b2: ', model.fc2.bias.data)
+
+
 criterion = MSELoss()
-optimizer = SGD([linear.weight, linear.bias], lr=lr)
+optimizer = SGD([model.fc1.weight, model.fc1.bias, model.fc2.weight, model.fc2.bias], lr=lr)
 # print ('w: ', linear.weight.data)
 # print ('b: ', linear.bias.data)
 
 for epoch in range(num_epochs):
 
     # Forward pass
-    pred = linear(x)
+    pred = model.forward(x)
     loss = criterion(pred, y)
 
     # Backward and optimize

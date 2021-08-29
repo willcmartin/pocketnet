@@ -1,5 +1,6 @@
 # from pocketnet.ops import *
 import numpy as np
+import math
 
 class Tensor:
     def __init__(self, data, children=()):
@@ -133,9 +134,10 @@ class Linear:
     def __init__(self, in_dim, out_dim):
         self.in_dim = in_dim
         self.out_dim = out_dim
-        # TODO: make random
-        self.weight = Tensor([[-0.6334]])
-        self.bias = Tensor([-0.7632])
+        # initialize better: https://discuss.pytorch.org/t/how-are-layer-weights-and-biases-initialized-by-default/13073
+        stdv = 1. / math.sqrt(in_dim*out_dim)
+        self.weight = Tensor(np.random.uniform(-stdv, stdv, (out_dim, in_dim)))
+        self.bias = Tensor(np.random.uniform(-stdv, stdv, (out_dim)))
 
     def __call__(self, x):
         return x.matmul(self.weight.transpose()).add(self.bias)
