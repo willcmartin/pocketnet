@@ -1,6 +1,7 @@
-from pocketnet.tensor import Tensor, Linear, MSELoss, SGD, CrossEntropyLoss
+from pocketnet.tensor import Tensor, Linear, MSELoss, SGD #, CrossEntropyLoss
 import numpy as np
 import sys
+import cv2
 
 # from https://github.com/geohot/ai-notebooks/blob/master/mnist_from_scratch.ipynb
 def fetch(url):
@@ -35,9 +36,10 @@ input_size = 784
 num_classes = 10
 learning_rate = 0.001
 BS = 100
-num_epochs = 5
+num_epochs = 30
 
 model = Linear(input_size, num_classes)
+
 criterion = MSELoss()
 optimizer = SGD([model.weight, model.bias], lr=learning_rate)
 
@@ -60,6 +62,7 @@ for epoch in range(num_epochs):
 correct = 0
 total = 0
 X_test = X_test.reshape((-1, 28*28))
+
 for images, labels in zip(X_test, Y_test):
     images = images.reshape(-1, input_size)
     images = Tensor(images)
@@ -75,7 +78,23 @@ for images, labels in zip(X_test, Y_test):
 print('Accuracy of the model on the test images: {} %'.format(100 * correct / total))
 
 
+test_img = cv2.imread('/Users/willmartin/Desktop/7.jpeg')
+test_img = cv2.cvtColor(test_img, cv2.COLOR_BGR2GRAY)
+test_img = (255-test_img)
+for i in range(test_img.shape[0]):
+    for j in range(test_img.shape[1]):
+        if test_img[i,j] < 100:
+            test_img[i,j] = 0
+test_img = (test_img/255)
 
+cv2.imshow("img", test_img)
+cv2.waitKey(0)
+test_img = cv2.resize(test_img, (28, 28))
+test_img = test_img.reshape(-1, input_size)
+img = Tensor(test_img)
+out = model(img)
+print(out.data)
+print(np.argmax(out.data, 1))
 
 # input_size = 784
 # hidden_size = 500

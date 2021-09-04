@@ -194,16 +194,16 @@ class MSELoss:
     def __call__(self, pred, true):
         return (true.subtract(pred).power(2).mean())
 
-class CrossEntropyLoss:
-    def __init__(self):
-        pass
-    def __call__(self, pred, true):
-        # print(pred.data)
-        # print((true.matmul(pred.log()).sum()).data)
-        # return (pred.multiply(-1).transpose().matmul(true).mean())
-        # print(pred.abs().log().data)
-        # print(pred.data)
-        return(true.multiply(pred.abs().log()).mean())
+# class CrossEntropyLoss:
+#     def __init__(self):
+#         pass
+#     def __call__(self, pred, true):
+#         # print(pred.data)
+#         # print((true.matmul(pred.log()).sum()).data)
+#         # return (pred.multiply(-1).transpose().matmul(true).mean())
+#         # print(pred.abs().log().data)
+#         # print(pred.data)
+#         return(true.multiply(pred.abs().log()).mean())
 
 ################################################################################
 
