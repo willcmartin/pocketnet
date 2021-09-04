@@ -13,8 +13,14 @@ class Tensor:
         return Matmul.forward(self, other)
 
     def multiply(self, other):
+        return Multiply.forward(self, other)
+        # out = self
+        # out.data = np.multiply(out.data, other)
+        # return out
+
+    def abs(self):
         out = self
-        out.data = np.multiply(out.data, other)
+        out.data = np.abs(out.data)
         return out
 
     def add(self, other):
@@ -83,6 +89,17 @@ class Matmul(Op):
     @staticmethod
     def _b(parent, a, b):
         return [parent.grad.data @ b.data.T , a.data.T @ parent.grad.data]
+
+class Multiply(Op):
+    # TODO: check all of this
+    @staticmethod
+    def _f(a, b):
+        # TODO: expand dim
+        return np.multiply(a.data, b.data)
+
+    @staticmethod
+    def _b(parent, a, b):
+        return [parent.grad.data * b.data , parent.grad.data * a.data]
 
 class Add(Op):
     @staticmethod
@@ -181,8 +198,12 @@ class CrossEntropyLoss:
     def __init__(self):
         pass
     def __call__(self, pred, true):
-        print(true.matmul(pred).mean().data)
-        return (true.matmul(pred).mean())
+        # print(pred.data)
+        # print((true.matmul(pred.log()).sum()).data)
+        # return (pred.multiply(-1).transpose().matmul(true).mean())
+        # print(pred.abs().log().data)
+        # print(pred.data)
+        return(true.multiply(pred.abs().log()).mean())
 
 ################################################################################
 
