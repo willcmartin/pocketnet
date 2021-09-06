@@ -12,8 +12,8 @@ class Tensor:
     def matmul(self, other):
         return Matmul.forward(self, other)
 
-    def multiply(self, other):
-        return Multiply.forward(self, other)
+    # def multiply(self, other):
+    #     return Multiply.forward(self, other)
         # out = self
         # out.data = np.multiply(out.data, other)
         # return out
@@ -41,11 +41,14 @@ class Tensor:
     def transpose(self):
         return Transpose.forward(self)
 
-    def log(self):
-        return Log.forward(self)
+    # def log(self):
+    #     return Log.forward(self)
+    #
+    # def exp(self):
+    #     return Exp.forward(self)
 
-    def exp(self):
-        return Exp.forward(self)
+    def relu(self):
+        return ReluOp.forward(self)
 
     def backward(self):
         if self.grad is None:
@@ -58,6 +61,7 @@ class Tensor:
             if isinstance(child, Tensor):
                 child.backward()
 
+# TODO: learn about classmethod and staticmethod
 
 class Op:
     @classmethod
@@ -90,22 +94,23 @@ class Matmul(Op):
     def _b(parent, a, b):
         return [parent.grad.data @ b.data.T , a.data.T @ parent.grad.data]
 
-class Multiply(Op):
-    # TODO: check all of this
-    @staticmethod
-    def _f(a, b):
-        # TODO: expand dim
-        return np.multiply(a.data, b.data)
-
-    @staticmethod
-    def _b(parent, a, b):
-        return [parent.grad.data * b.data , parent.grad.data * a.data]
+# class Multiply(Op):
+#     # TODO: check all of this
+#     @staticmethod
+#     def _f(a, b):
+#         # TODO: expand dim
+#         return np.multiply(a.data, b.data)
+#
+#     @staticmethod
+#     def _b(parent, a, b):
+#         return [parent.grad.data * b.data , parent.grad.data * a.data]
 
 class Add(Op):
     @staticmethod
     def _f(a, b):
         return np.add(a.data, b.data)
 
+    @staticmethod
     def _b(parent, a, b):
         return [unbroadcast(parent.grad.data, a.data.shape),
                 unbroadcast(parent.grad.data, b.data.shape)]
@@ -115,6 +120,7 @@ class Subtract(Op):
     def _f(a, b):
         return np.subtract(a.data, b.data)
 
+    @staticmethod
     def _b(parent, a, b):
         return [unbroadcast(parent.grad.data, a.data.shape),
                 unbroadcast(-parent.grad.data, b.data.shape)]
@@ -124,6 +130,7 @@ class Sum(Op):
     def _f(a):
         return np.sum(a.data)
 
+    @staticmethod
     def _b(parent, a):
         return [np.ones(a.data.shape)]
 
@@ -132,6 +139,7 @@ class Mean(Op):
     def _f(parent):
         return np.mean(parent.data)
 
+    @staticmethod
     def _b(parent, a):
         return [np.ones(a.data.shape)*(1/a.data.size)]
 
@@ -140,6 +148,7 @@ class Power(Op):
     def _f(a, b):
         return np.power(a.data, b)
 
+    @staticmethod
     def _b(parent, a, b):
         return [b * np.power(a.data, b - 1) * parent.grad.data]
 
@@ -148,26 +157,37 @@ class Transpose(Op):
     def _f(a):
         return np.transpose(a.data)
 
+    @staticmethod
     def _b(parent, a):
         return [np.transpose(parent.grad.data)]
 
-class Log(Op):
+class ReluOp(Op):
     @staticmethod
     def _f(a):
-        return np.log(a.data)
+        return np.maximum(0, a.data)
 
-    # TODO: Check math!
-    def _b(parent, a):
-        return [parent.grad.data / a.data]
-
-class Exp(Op):
     @staticmethod
-    def _f(a):
-        return np.exp(a.data)
-
-    # TODO: Check math!
     def _b(parent, a):
-        return [a.data * parent.grad.data]
+        return [parent.grad.data * (a.data >= 0)]
+
+
+# class Log(Op):
+#     @staticmethod
+#     def _f(a):
+#         return np.log(a.data)
+#
+#     # TODO: Check math!
+#     def _b(parent, a):
+#         return [parent.grad.data / a.data]
+
+# class Exp(Op):
+#     @staticmethod
+#     def _f(a):
+#         return np.exp(a.data)
+#
+#     # TODO: Check math!
+#     def _b(parent, a):
+#         return [a.data * parent.grad.data]
 
 
 
@@ -184,6 +204,14 @@ class Linear:
 
     def __call__(self, x):
         return x.matmul(self.weight.transpose()).add(self.bias)
+
+class ReLU:
+    def __init__(self):
+        pass
+
+    def __call__(self, x):
+        return x.relu()
+
 
 ################################################################################
 

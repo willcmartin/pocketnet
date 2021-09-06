@@ -1,4 +1,4 @@
-from pocketnet.tensor import Tensor, Linear, MSELoss, SGD #, CrossEntropyLoss
+from pocketnet.tensor import Tensor, Linear, MSELoss, SGD, ReLU #, CrossEntropyLoss
 import numpy as np
 import sys
 import cv2
@@ -34,14 +34,29 @@ Y_test = Y_test_new
 
 input_size = 784
 num_classes = 10
+hidden_size = 500
 learning_rate = 0.001
 BS = 100
-num_epochs = 30
+num_epochs = 5
 
-model = Linear(input_size, num_classes)
+class NeuralNet():
+    def __init__(self, input_size, hidden_size, num_classes):
+        self.fc1 = Linear(input_size, num_classes)
+        self.relu = ReLU()
+        # self.fc2 = Linear(hidden_size, num_classes)
+
+    def forward(self, x):
+        out = self.fc1(x)
+        out = self.relu(out)
+        # out = self.fc2(out)
+        return out
+
+
+model = NeuralNet(input_size, hidden_size, num_classes)
 
 criterion = MSELoss()
-optimizer = SGD([model.weight, model.bias], lr=learning_rate)
+optimizer = SGD([model.fc1.weight, model.fc1.bias], lr=learning_rate)
+
 
 for epoch in range(num_epochs):
     for i in range(600):
@@ -49,7 +64,7 @@ for epoch in range(num_epochs):
         X = Tensor(X_train[samp].reshape((-1, 28*28)))
         Y = Tensor(Y_train[samp])
 
-        outputs = model(X)
+        outputs = model.forward(X)
         loss = criterion(outputs, Y)
         optimizer.zero_grad()
         loss.backward()
@@ -66,7 +81,7 @@ X_test = X_test.reshape((-1, 28*28))
 for images, labels in zip(X_test, Y_test):
     images = images.reshape(-1, input_size)
     images = Tensor(images)
-    outputs = model(images)
+    outputs = model.forward(images)
 
     predicted = np.argmax(outputs.data, 1)
     total += 1
@@ -76,25 +91,6 @@ for images, labels in zip(X_test, Y_test):
         correct += 1
 
 print('Accuracy of the model on the test images: {} %'.format(100 * correct / total))
-
-
-test_img = cv2.imread('/Users/willmartin/Desktop/7.jpeg')
-test_img = cv2.cvtColor(test_img, cv2.COLOR_BGR2GRAY)
-test_img = (255-test_img)
-for i in range(test_img.shape[0]):
-    for j in range(test_img.shape[1]):
-        if test_img[i,j] < 100:
-            test_img[i,j] = 0
-test_img = (test_img/255)
-
-cv2.imshow("img", test_img)
-cv2.waitKey(0)
-test_img = cv2.resize(test_img, (28, 28))
-test_img = test_img.reshape(-1, input_size)
-img = Tensor(test_img)
-out = model(img)
-print(out.data)
-print(np.argmax(out.data, 1))
 
 # input_size = 784
 # hidden_size = 500
