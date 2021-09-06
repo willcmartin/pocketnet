@@ -193,6 +193,19 @@ class ReluOp(Op):
 
 ################################################################################
 
+class Module():
+    def __init__(self):
+        pass
+
+    def parameters(self):
+        parameters = []
+        if hasattr(self, '__dict__'):
+            for val in self.__dict__.values():
+                for subval in val.__dict__.values():
+                    if isinstance(subval, Tensor):
+                        parameters.append(subval)
+        return parameters
+
 class Linear:
     def __init__(self, in_dim, out_dim):
         self.in_dim = in_dim

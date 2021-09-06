@@ -1,4 +1,4 @@
-from pocketnet.tensor import Tensor, Linear, MSELoss, SGD, ReLU #, CrossEntropyLoss
+from pocketnet.tensor import Tensor, Linear, Module, MSELoss, SGD, ReLU #, CrossEntropyLoss
 import numpy as np
 import sys
 import cv2
@@ -39,8 +39,10 @@ learning_rate = 0.001
 BS = 100
 num_epochs = 5
 
-class NeuralNet():
+class NeuralNet(Module):
     def __init__(self, input_size, hidden_size, num_classes):
+        super(NeuralNet, self).__init__()
+        # super().__init__()
         self.fc1 = Linear(input_size, num_classes)
         self.relu = ReLU()
         # self.fc2 = Linear(hidden_size, num_classes)
@@ -54,8 +56,10 @@ class NeuralNet():
 
 model = NeuralNet(input_size, hidden_size, num_classes)
 
+# print(model.parameters())
+
 criterion = MSELoss()
-optimizer = SGD([model.fc1.weight, model.fc1.bias], lr=learning_rate)
+optimizer = SGD(model.parameters(), lr=learning_rate)
 
 
 for epoch in range(num_epochs):
