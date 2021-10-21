@@ -41,14 +41,23 @@ class Tensor:
     def transpose(self):
         return Transpose.forward(self)
 
-    # def log(self):
-    #     return Log.forward(self)
-    #
-    # def exp(self):
-    #     return Exp.forward(self)
+    def log(self):
+        return Log.forward(self)
+
+    def exp(self):
+        return Exp.forward(self)
 
     def relu(self):
         return ReluOp.forward(self)
+
+    def max(self):
+        return Max.forward(self)
+
+    def logsoftmax(self):
+        x_off = self.subtract(self.max())
+        return x_off.subtract(((x_off.exp()).sum()).log())
+        # x_off = self.add(self)
+        # return x_off#.subtract((x_off.exp()).sum().log())
 
     def backward(self):
         if self.grad is None:
@@ -56,7 +65,8 @@ class Tensor:
         if self.op is not None:
             children_grads = self.op.backward(self, self.children)
             for child, grad in zip(self.children, children_grads):
-                child.grad = Tensor(grad)
+                child.grad = Tensor(grad) if child.grad is None else Tensor(np.add(child.grad.data, grad)) #child.grad.add(Tensor(grad)) # idk which is correct
+                # print("sub_grad:", child.grad.data)
         for child in self.children:
             if isinstance(child, Tensor):
                 child.backward()
@@ -77,9 +87,9 @@ class Op:
 ################################################################################
 
 def unbroadcast(in_grad, out_shape):
-    # TODO: make more flexible
+    # TODO: make more flexible!
     if in_grad.shape != out_shape:
-        out_grad = np.sum(in_grad, axis=0)
+        out_grad = np.sum(in_grad, axis=(0,1))
     else:
         out_grad = in_grad
     return out_grad
@@ -132,7 +142,7 @@ class Sum(Op):
 
     @staticmethod
     def _b(parent, a):
-        return [np.ones(a.data.shape)]
+        return [np.ones(a.data.shape)*parent.grad.data]
 
 class Mean(Op):
     @staticmethod
@@ -170,33 +180,53 @@ class ReluOp(Op):
     def _b(parent, a):
         return [parent.grad.data * (a.data >= 0)]
 
+class LogSoftmaxOp(Op):
+    @staticmethod
+    def _f(a):
+        x_off = a.subtract(a.max())
+        return x_off.subtract((x_off.exp()).sum().log())
 
-# class Log(Op):
-#     @staticmethod
-#     def _f(a):
-#         return np.log(a.data)
-#
-#     # TODO: Check math!
-#     def _b(parent, a):
-#         return [parent.grad.data / a.data]
+    @staticmethod
+    def _b(parent, a):
+        return [parent.grad]
 
-# class Exp(Op):
-#     @staticmethod
-#     def _f(a):
-#         return np.exp(a.data)
-#
-#     # TODO: Check math!
-#     def _b(parent, a):
-#         return [a.data * parent.grad.data]
+class Log(Op):
+    @staticmethod
+    def _f(a):
+        return np.log(a.data)
+
+    # TODO: Check math!
+    @staticmethod
+    def _b(parent, a):
+        return [parent.grad.data / a.data]
+
+class Exp(Op):
+    @staticmethod
+    def _f(a):
+        return np.exp(a.data)
+
+    # TODO: Check math!
+    @staticmethod
+    def _b(parent, a):
+        return [parent.grad.data * parent.data]
+
+class Max(Op):
+    @staticmethod
+    def _f(a):
+        return np.max(a.data)
+
+    @staticmethod
+    def _b(parent, a):
+        out = np.zeros(a.data.shape)
+        # if a != 0
+        out[np.where(a.data == parent.data)] = 1
+        return [out/np.sum(out)]
 
 
 
 ################################################################################
 
-class Module():
-    def __init__(self):
-        pass
-
+class Module:
     def parameters(self):
         parameters = []
         if hasattr(self, '__dict__'):
@@ -219,19 +249,22 @@ class Linear:
         return x.matmul(self.weight.transpose()).add(self.bias)
 
 class ReLU:
-    def __init__(self):
-        pass
-
     def __call__(self, x):
         return x.relu()
+
+# class LogSoftmax:
+#     def __init__(self, a, dim=1):
+#         self.a = a
+#         self.dim = dim
+#
+#     def __call__(self):
+#         x_off = self.a.subtract(self.a.max())
+#         return (x_off.subtract((x_off.exp()).sum().log()))
 
 
 ################################################################################
 
 class MSELoss:
-    def __init__(self):
-        pass
-
     def __call__(self, pred, true):
         return (true.subtract(pred).power(2).mean())
 
