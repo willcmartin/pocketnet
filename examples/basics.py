@@ -3,6 +3,9 @@ from pocketnet.nn import Linear, Module, MSELoss
 from pocketnet.optim import SGD
 import numpy as np
 
+from torchvision import datasets, transforms
+
+
 # source (in pytorch):
 # https://github.com/yunjey/pytorch-tutorial
 
@@ -101,8 +104,80 @@ def linear_regression():
         if (epoch+1) % 5 == 0:
             print('Epoch [{}/{}], Loss: {:.4f}'.format(epoch+1, num_epochs, loss.data))
 
+def mnist_logistic_regression():
+    # i cheated and used pytorch for MNIST loading
+    train_set = datasets.MNIST('./data', train=True, download=True)
+    test_set = datasets.MNIST('./data', train=False, download=True)
+
+    x_train = train_set.data.numpy()
+    x_test = test_set.data.numpy()
+
+    y_train = train_set.targets.numpy()
+    y_test = test_set.targets.numpy()
+
+    # normalize x and one-hot encode y
+    x_train = (x_train/255)
+    y_train_new = np.zeros((y_train.shape[0], 10))
+    for n, y in enumerate(y_train):
+        y_train_new[n,y] = 1
+    y_train = y_train_new
+
+    x_test = (x_test/255)
+    y_test_new = np.zeros((x_test.shape[0], 10))
+    for n, y in enumerate(y_test):
+        y_test_new[n,y] = 1
+    y_test = y_test_new
+
+    # constants and hyperparams
+    input_size = 784
+    num_classes = 10
+    hidden_size = 500
+    learning_rate = 0.001
+    BS = 100
+    num_epochs = 15
+
+    model = Linear(input_size, num_classes)
+
+    criterion = MSELoss()
+    optimizer = SGD([model.weight, model.bias], lr=learning_rate)
+
+
+    for epoch in range(num_epochs):
+        for i in range(600):
+            samp = np.random.randint(0, x_train.shape[0], size=(BS))
+            X = Tensor(x_train[samp].reshape((-1, 28*28)))
+            Y = Tensor(y_train[samp])
+
+            outputs = model(X)
+            loss = criterion(outputs, Y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        print ('Epoch [{}/{}], Loss: {:.4f}'
+               .format(epoch+1, num_epochs, loss.data))
+
+    correct = 0
+    total = 0
+    x_test = x_test.reshape((-1, 28*28))
+
+    for images, labels in zip(x_test, y_test):
+        images = images.reshape(-1, input_size)
+        images = Tensor(images)
+        outputs = model(images)
+
+        predicted = np.argmax(outputs.data, 1)
+        total += 1
+
+        label = np.argmax(labels, 0)
+        if predicted == label:
+            correct += 1
+
+    print('Accuracy of the model on the test images: {} %'.format(100 * correct / total))
+
 
 if __name__ == "__main__":
     # autograd_1()
     # autograd_2()
-    linear_regression()
+    # linear_regression()
+    mnist_logistic_regression()

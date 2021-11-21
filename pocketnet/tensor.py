@@ -53,8 +53,10 @@ class Tensor:
         return Max.forward(self)
 
     def logsoftmax(self):
-        x_off = self.subtract(self.max())
-        return x_off.subtract(((x_off.exp()).sum()).log())
+        return LogSoftmaxOp.forward(self)
+
+        # x_off = self.subtract(self.max())
+        # return x_off.subtract(((x_off.exp()).sum()).log())
         # x_off = self.add(self)
         # return x_off#.subtract((x_off.exp()).sum().log())
 
