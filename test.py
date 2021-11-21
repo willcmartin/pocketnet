@@ -1,30 +1,59 @@
-from pocketnet.tensor import Tensor, Linear, Module, MSELoss, SGD, ReLU #, CrossEntropyLoss
+from pocketnet.tensor import Tensor
+from pocketnet.nn import Linear, Module, MSELoss
+from pocketnet.optim import SGD
 import numpy as np
 import sys
 # import cv2
 
-x = Tensor([[3.44, 6.88, 55.8, 55.8], [3.4, 55.8,2.4, 5.0]])
-b = Tensor([[3.44], [6.88], [55.8], [55.8]])
+x = Tensor([[ 0.6328, -0.2425],
+            [ 0.0692,  0.5727],
+            [ 0.0692,  0.5727]])
+y = Tensor([[-0.8524, -0.1387],
+            [-0.9748, -0.8326],
+            [ 0.0692,  0.5727]])
+
+linear = Linear(2, 2)
+print ('w: ', linear.weight.data)
+print ('b: ', linear.bias.data)
+
+linear.weight.data = np.asarray([[-0.4026,  0.2834], [-0.5350,  0.2631]])
+linear.bias.data = np.asarray([[-0.4078,  0.3361]])
+
+learning_rate = 0.001
+criterion = MSELoss()
+optimizer = SGD([linear.weight, linear.bias], lr=learning_rate)
+
+pred = linear(x)
+print ('pred: ', pred.data)
+
+loss = ((y.subtract(pred)).sum())
+print('loss: ', loss.data)
+
+loss.backward()
+
+print ('dL/dw: ', linear.weight.grad.data)
+print ('dL/db: ', linear.bias.grad.data)
+
+
+# x = Tensor([[3.44, 6.88, 55.8, 55.8], [3.4, 55.8,2.4, 5.0]])
+# b = Tensor([3.44, 6.88, 55.8, 55.8])
+#
+# # y = x.add(b.max()).sum()
+# # y = x.matmul(b).sum()
+# #
+# y = x.add(b).sum()
+#
+# print(y.data)
+#
+# y.backward()
+#
+# print(x.grad.data)
+# print(b.grad.data)
 
 
 
-# y = b.add(x.sum()).sum()
-y = x.matmul(b).sum()
-# w = x_off #.subtract(((x_off)))    #x_off.subtract(((x_off.exp()).sum()).log())
-# y_2 = w.
 
-# y = x.add(x).sum()
-
-print(y.data)
-
-y.backward()
-
-print(x.grad.data)
-print(b.grad.data)
-
-
-
-# # from https://github.com/geohot/ai-notebooks/blob/master/mnist_from_scratch.ipynb
+# from https://github.com/geohot/ai-notebooks/blob/master/mnist_from_scratch.ipynb
 # def fetch(url):
 #   import requests, gzip, os, hashlib, numpy
 #   fp = os.path.join("/tmp", hashlib.md5(url.encode('utf-8')).hexdigest())

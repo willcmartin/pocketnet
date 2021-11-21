@@ -1,4 +1,3 @@
-# from pocketnet.ops import *
 import numpy as np
 import math
 
@@ -87,9 +86,19 @@ class Op:
 ################################################################################
 
 def unbroadcast(in_grad, out_shape):
+    print(in_grad, out_shape)
     # TODO: make more flexible!
     if in_grad.shape != out_shape:
-        out_grad = np.sum(in_grad, axis=(0,1))
+
+        sum_axes = []
+        for i in range(len(in_grad.shape)):
+            try:
+                if out_shape[i]==1:
+                    sum_axes.append(i)
+            except:
+                sum_axes.append(i)
+        print(sum_axes)
+        out_grad = np.sum(in_grad, axis=tuple(sum_axes))#tuple(sum_axes))
     else:
         out_grad = in_grad
     return out_grad
@@ -98,6 +107,7 @@ class Matmul(Op):
     @staticmethod
     def _f(a, b):
         # TODO: expand dim
+        print("MATMUL", np.matmul(a.data, b.data))
         return np.matmul(a.data, b.data)
 
     @staticmethod
@@ -122,6 +132,7 @@ class Add(Op):
 
     @staticmethod
     def _b(parent, a, b):
+        print("ADD: ", a.data.shape, b.data.shape)
         return [unbroadcast(parent.grad.data, a.data.shape),
                 unbroadcast(parent.grad.data, b.data.shape)]
 
@@ -132,16 +143,19 @@ class Subtract(Op):
 
     @staticmethod
     def _b(parent, a, b):
+
         return [unbroadcast(parent.grad.data, a.data.shape),
                 unbroadcast(-parent.grad.data, b.data.shape)]
 
 class Sum(Op):
     @staticmethod
     def _f(a):
-        return np.sum(a.data)
+        print("SUM 2:", np.sum(a.data).reshape(1))
+        return np.sum(a.data).reshape(1)
 
     @staticmethod
     def _b(parent, a):
+        print(("SUM:", np.ones(a.data.shape)*parent.grad.data), a.data.shape)
         return [np.ones(a.data.shape)*parent.grad.data]
 
 class Mean(Op):
@@ -169,6 +183,7 @@ class Transpose(Op):
 
     @staticmethod
     def _b(parent, a):
+        print("TRANS")
         return [np.transpose(parent.grad.data)]
 
 class ReluOp(Op):
@@ -213,7 +228,7 @@ class Exp(Op):
 class Max(Op):
     @staticmethod
     def _f(a):
-        return np.max(a.data)
+        return  np.max(a.data).reshape(1) # TODO: is reshape needed?
 
     @staticmethod
     def _b(parent, a):
@@ -226,70 +241,70 @@ class Max(Op):
 
 ################################################################################
 
-class Module:
-    def parameters(self):
-        parameters = []
-        if hasattr(self, '__dict__'):
-            for val in self.__dict__.values():
-                for subval in val.__dict__.values():
-                    if isinstance(subval, Tensor):
-                        parameters.append(subval)
-        return parameters
-
-class Linear:
-    def __init__(self, in_dim, out_dim):
-        self.in_dim = in_dim
-        self.out_dim = out_dim
-        # initialize better: https://discuss.pytorch.org/t/how-are-layer-weights-and-biases-initialized-by-default/13073
-        stdv = 1. / math.sqrt(in_dim*out_dim)
-        self.weight = Tensor(np.random.uniform(-stdv, stdv, (out_dim, in_dim)))
-        self.bias = Tensor(np.random.uniform(-stdv, stdv, (out_dim)))
-
-    def __call__(self, x):
-        return x.matmul(self.weight.transpose()).add(self.bias)
-
-class ReLU:
-    def __call__(self, x):
-        return x.relu()
-
-# class LogSoftmax:
-#     def __init__(self, a, dim=1):
-#         self.a = a
-#         self.dim = dim
+# class Module:
+#     def parameters(self):
+#         parameters = []
+#         if hasattr(self, '__dict__'):
+#             for val in self.__dict__.values():
+#                 for subval in val.__dict__.values():
+#                     if isinstance(subval, Tensor):
+#                         parameters.append(subval)
+#         return parameters
 #
-#     def __call__(self):
-#         x_off = self.a.subtract(self.a.max())
-#         return (x_off.subtract((x_off.exp()).sum().log()))
+# class Linear:
+#     def __init__(self, in_dim, out_dim):
+#         self.in_dim = in_dim
+#         self.out_dim = out_dim
+#         # initialize better: https://discuss.pytorch.org/t/how-are-layer-weights-and-biases-initialized-by-default/13073
+#         stdv = 1. / math.sqrt(in_dim*out_dim)
+#         self.weight = Tensor(np.random.uniform(-stdv, stdv, (out_dim, in_dim)))
+#         self.bias = Tensor(np.random.uniform(-stdv, stdv, (1, out_dim)))
+#
+#     def __call__(self, x):
+#         return x.matmul(self.weight.transpose()).add(self.bias)
+#
+# class ReLU:
+#     def __call__(self, x):
+#         return x.relu()
+#
+# # class LogSoftmax:
+# #     def __init__(self, a, dim=1):
+# #         self.a = a
+# #         self.dim = dim
+# #
+# #     def __call__(self):
+# #         x_off = self.a.subtract(self.a.max())
+# #         return (x_off.subtract((x_off.exp()).sum().log()))
 
 
 ################################################################################
 
-class MSELoss:
-    def __call__(self, pred, true):
-        return (true.subtract(pred).power(2).mean())
-
-# class CrossEntropyLoss:
-#     def __init__(self):
-#         pass
+# class MSELoss:
 #     def __call__(self, pred, true):
-#         # print(pred.data)
-#         # print((true.matmul(pred.log()).sum()).data)
-#         # return (pred.multiply(-1).transpose().matmul(true).mean())
-#         # print(pred.abs().log().data)
-#         # print(pred.data)
-#         return(true.multiply(pred.abs().log()).mean())
+#         return (true.subtract(pred).power(2).mean())
+#
+# # class CrossEntropyLoss:
+# #     def __init__(self):
+# #         pass
+# #     def __call__(self, pred, true):
+# #         # print(pred.data)
+# #         # print((true.matmul(pred.log()).sum()).data)
+# #         # return (pred.multiply(-1).transpose().matmul(true).mean())
+# #         # print(pred.abs().log().data)
+# #         # print(pred.data)
+# #         return(true.multiply(pred.abs().log()).mean())
 
 ################################################################################
 
-class SGD:
-    def __init__(self, params, lr=0.001):
-        self.params = params
-        self.lr = lr
-
-    def step(self):
-        for param in self.params:
-            param.data = param.data - (np.multiply(param.grad.data, self.lr))
-
-    def zero_grad(self):
-        for param in self.params:
-            param.grad = None
+# class SGD:
+#     def __init__(self, params, lr=0.001):
+#         self.params = params
+#         self.lr = lr
+#
+#     def step(self):
+#         for param in self.params:
+#             param.data = param.data - (np.multiply(param.grad.data, self.lr))
+#
+#     def zero_grad(self):
+#         for param in self.params:
+#             param.grad = None
