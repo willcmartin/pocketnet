@@ -12,7 +12,7 @@ class Module:
                         parameters.append(subval)
         return parameters
 
-class Linear:
+class Linear():
     def __init__(self, in_dim, out_dim):
         self.in_dim = in_dim
         self.out_dim = out_dim

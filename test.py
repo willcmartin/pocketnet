@@ -3,36 +3,45 @@ from pocketnet.nn import Linear, Module, MSELoss
 from pocketnet.optim import SGD
 import numpy as np
 import sys
-# import cv2
 
-x = Tensor([[ 0.6328, -0.2425],
-            [ 0.0692,  0.5727],
-            [ 0.0692,  0.5727]])
-y = Tensor([[-0.8524, -0.1387],
-            [-0.9748, -0.8326],
-            [ 0.0692,  0.5727]])
+def basic_linear():
+    x = Tensor([[ 0.6328, -0.2425],
+                [ 0.0692,  0.5727],
+                [ 0.0692,  0.5727]])
+    y = Tensor([[-0.8524, -0.1387],
+                [-0.9748, -0.8326],
+                [ 0.0692,  0.5727]])
 
-linear = Linear(2, 2)
-print ('w: ', linear.weight.data)
-print ('b: ', linear.bias.data)
+    linear = Linear(2, 2)
+    print ('w: ', linear.weight.data)
+    print ('b: ', linear.bias.data)
 
-linear.weight.data = np.asarray([[-0.4026,  0.2834], [-0.5350,  0.2631]])
-linear.bias.data = np.asarray([[-0.4078,  0.3361]])
+    linear.weight.data = np.asarray([[-0.0536, -0.2003], [ 0.3518,  0.3669]])
+    linear.bias.data = np.asarray([[0.3817, 0.6240]])
 
-learning_rate = 0.001
-criterion = MSELoss()
-optimizer = SGD([linear.weight, linear.bias], lr=learning_rate)
+    learning_rate = 0.001
+    criterion = MSELoss()
+    optimizer = SGD([linear.weight, linear.bias], lr=learning_rate)
 
-pred = linear(x)
-print ('pred: ', pred.data)
+    pred = linear(x)
+    print ('pred: ', pred.data)
 
-loss = ((y.subtract(pred)).sum())
-print('loss: ', loss.data)
+    loss = criterion(pred, y)
+    print('loss: ', loss.data)
 
-loss.backward()
+    loss.backward()
 
-print ('dL/dw: ', linear.weight.grad.data)
-print ('dL/db: ', linear.bias.grad.data)
+    print ('dL/dw: ', linear.weight.grad.data)
+    print ('dL/db: ', linear.bias.grad.data)
+
+    optimizer.step()
+
+    pred = linear(x)
+    print("pred: ", pred.data)
+    loss = criterion(pred, y)
+    print('loss after 1 step optimization: ', loss.data)
+
+basic_linear()
 
 
 # x = Tensor([[3.44, 6.88, 55.8, 55.8], [3.4, 55.8,2.4, 5.0]])
